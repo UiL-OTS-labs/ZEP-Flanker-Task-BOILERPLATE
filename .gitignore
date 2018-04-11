@@ -1,1 +1,5 @@
 db/
+
+#vim temporaries
+*.sw[po]
+/*.csv
