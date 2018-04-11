@@ -46,10 +46,6 @@ import std_exit_page1;
 import std_blank_page;
 
 import texts_en;
-//import test_page;
-import stimuli;
-//import output;
-import pause_page;
 
 import test::task;
 import test::shuffle;
