@@ -19,7 +19,6 @@ HISTORY:
 Page test_page
 {
     TestItem    item;           // trial control parameters
-    dur surplus_duration;           // how much time is left in trial after inter-stimulus interval and fixation cross
 
     init()
     {
@@ -69,17 +68,6 @@ Page test_page
             }
 
 
-            CrossShape fixation
-            {
-                init()
-                {
-                    radius = FIXATION_CROSS_SIZE;
-                    line_width = FIXATION_CROSS_WIDTH;
-                    line_pattern_color = color:crimson;
-                }
-            }
-
-
             ImageShape stimulus
             {
                 void setup(string image_filename)
@@ -98,22 +86,18 @@ Page test_page
             // Prepare stimulus presentation object.
             // canvas.stimulus.text = item.word;
 
-            // Start fixation cross.
-            canvas.fixation.start(t, FIXATION_CROSS_DURATION);
-            time fixoffset = canvas.fixation.expected_finish_time;
-
             canvas.stimulus.setup(stimuli_dir() + "/images/" + item.filename);
 
             // Start stimulus at fixation offset.
-            canvas.stimulus.start(fixoffset+BLANK_AFTER_FIXATION);
+            canvas.stimulus.start(t);
 
             // Return stimulus onset time.
             return canvas.stimulus.expected_start_time;
         }
 
-        void stop_stimulus()
+        void stop_stimulus(time t)
         {
-            canvas.stimulus.stop(now());
+            canvas.stimulus.stop(t);
         }
 
 
@@ -154,20 +138,16 @@ Page test_page
                 rt = int(reaction_time(0));
                 correct = val == item.side;
 
-                layout.stop_stimulus();  
+                layout.stop_stimulus(t);  
                 ignore_remaining_hits();
 
-                //if setup handle the feedback.
-                real correctness = 0;
-                if (num_valid_hits > 0) correctness = correct ? 1 : -1;
+                test_page_overlay.start_feedback(
+                    this,
+                    correct,
+                    FEEDBACK_DURATION
+                    );
 
-                test_page_overlay.start_feedback(this, correctness,FEEDBACK_DURATION);
-                if(surplus_duration>reaction_time(0))
-                    surplus_duration = surplus_duration - reaction_time(0);
-                else
-                    surplus_duration = 0s;
-                stop(t+surplus_duration);
-
+                stop();
             }
             else if (validity == HIT_TOO_EARLY || validity == HIT_TOO_LATE)
             {
@@ -178,7 +158,7 @@ Page test_page
 
         on_event:finish()
         {
-                done(CONTINUE);
+            done(CONTINUE);
         }
     }
 
@@ -206,8 +186,7 @@ Page test_page
         test_page_overlay.setup(this);
 
         // Show or hide prompt.
-        test_page_overlay.show_prompt(pr ? 
-            INSTRUCTION_OVERLAY : "");
+        test_page_overlay.show_prompt(pr ? INSTRUCTION_OVERLAY : "");
 
         // Enable or disable the progress bar.
         test_page_overlay.show_progress_bar(ntrials);   // disabled if < 0
@@ -216,11 +195,11 @@ Page test_page
         test_page_overlay.enable_feedback(fb);          // disabled if false
 
 
-        // Enable button-box buttons 0 and 1 for resp. no(0) and yes(1).
+        // Enable button-box buttons 0 and 2 for resp. no(0) and yes(1).
         control.target = this;
         control.button_box.disable_buttons();
         control.button_box.enable_button(0, 0); // button 0 means left(0)
-        control.button_box.enable_button(2, 1); // button 1 means right(1)
+        control.button_box.enable_button(2, 1); // button 2 means right(1)
     }
 
 
@@ -248,8 +227,6 @@ Page test_page
 
         // Start fixation symbol and stimulus.
         time stimonset = layout.start_stimulus(tref);
-
-        surplus_duration = TRIAL_DURATION - (stimonset-tref);
 
         // Response interval starts at stimulus onset. Timeout after 
         // RESPONSE_DURATION unless this duration is 0s or less.
