@@ -37,7 +37,7 @@ HISTORY:
 
 \******************************************************************************/
 
-requires 1.14;
+requires 1.17;
 
 //globally used modules
 import std_windows1;
